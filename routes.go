@@ -12,28 +12,53 @@ type Post struct {
 }
 
 var (
-	post []Post
+	posts []Post
 )
 
 // to run when the program initializes
 func init() {
-	posts = []Post{Post{Id: 1, Title: "Title 1", Text: "Text 1"}}
-
+	posts = []Post{{Id: 1, Title: "Title 1", Text: "Text 1"}}
 }
 
-func getPosts(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-type", "application/json")
+func getPosts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json")
 
 	// encode the array into the json format
 	result, err := json.Marshal(posts)
 
 	if err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
-		res.Write([]byte(`{"error": "Error marshalling the posts array"}`))
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Error marshalling the posts array"}`))
 		return
 	}
 
-	res.WriteHeader(http.StatusOK)
-	res.Write(result)
-	return
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
+
+func addPosts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-type", "application/json")
+
+	var post Post
+	err := json.NewDecoder(r.Body).Decode(&post)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Error marshalling the request"}`))
+		return
+	}
+
+	post.Id = len(posts) + 1
+	posts = append(posts, post)
+
+	result, err2 := json.Marshal(posts)
+
+	if err2 != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error": "Error marshalling the request"}`))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
 }
