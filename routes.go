@@ -2,63 +2,47 @@ package main
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
-)
 
-type Post struct {
-	Id    int    `json:"id"`
-	Title string `json:"title"`
-	Text  string `json:"text"`
-}
+	"github.com/folafunmi-db/go-pragmatic/entity"
+	"github.com/folafunmi-db/go-pragmatic/repository"
+)
 
 var (
-	posts []Post
+	repo repository.PostRepository = repository.NewPostRepository()
 )
-
-// to run when the program initializes
-func init() {
-	posts = []Post{{Id: 1, Title: "Title 1", Text: "Text 1"}}
-}
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 
-	// encode the array into the json format
-	result, err := json.Marshal(posts)
+	posts, err := repo.FindAll()
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Error marshalling the posts array"}`))
+		w.Write([]byte(`{"error": "Error getting the posts"}`))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(result)
+	json.NewEncoder(w).Encode(posts)
 }
 
 func addPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "application/json")
 
-	var post Post
+	var post entity.Post
 	err := json.NewDecoder(r.Body).Decode(&post)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Error marshalling the request"}`))
+		w.Write([]byte(`{"error": "Error unmarshalling the request"}`))
 		return
 	}
 
-	post.Id = len(posts) + 1
-	posts = append(posts, post)
-
-	result, err2 := json.Marshal(posts)
-
-	if err2 != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Error marshalling the request"}`))
-		return
-	}
+	post.Id = rand.Int63()
+	repo.Save(post)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(result)
+	json.NewEncoder(w).Encode(post)
 }
