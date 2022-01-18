@@ -4,6 +4,7 @@ import (
 	"context"
 	firebase "firebase.google.com/go/v4"
 	entity "github.com/folafunmi-db/go-pragmatic/entity"
+	it "google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"log"
 )
@@ -60,11 +61,13 @@ func (*repo) Save(post *entity.Post) (*entity.Post, error) {
 func (*repo) FindAll() ([]entity.Post, error) {
 	ctx := context.Background()
 	opt := option.WithCredentialsFile("../go-reviews-a488e-firebase-adminsdk-2h56f-f5840bc0a9.json")
+
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
 		log.Fatalf("error initializing app: %v", err)
 		return nil, err
 	}
+
 	client, err := app.Firestore(ctx)
 
 	if err != nil {
@@ -79,6 +82,11 @@ func (*repo) FindAll() ([]entity.Post, error) {
 
 	for {
 		doc, err := iterator.Next()
+
+		if err == it.Done {
+			return posts, nil
+		}
+
 		if err != nil {
 			log.Fatalf("Failed to iterate the list of posts: %v", err)
 			return nil, err
@@ -92,6 +100,4 @@ func (*repo) FindAll() ([]entity.Post, error) {
 
 		posts = append(posts, post)
 	}
-	return posts, nil
-
 }
