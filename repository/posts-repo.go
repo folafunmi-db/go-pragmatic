@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
+	firebase "firebase.google.com/go/v4"
+	entity "github.com/folafunmi-db/go-pragmatic/entity"
+	"google.golang.org/api/option"
 	"log"
-	"../entity"
-	"cloud.google.com/go/firestore"
 )
 
 type PostRepository interface {
@@ -20,13 +21,20 @@ func NewPostRepository() PostRepository {
 }
 
 const (
-	projectId string = "go-reviews"
+	projectId      string = "go-reviews"
 	collectionName string = "posts"
 )
 
-func Save(post *entity.Post) (*entity.Post, error) {
+func (*repo) Save(post *entity.Post) (*entity.Post, error) {
 	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectId)
+	// client, err := firestore.NewClient(ctx, projectId)
+	opt := option.WithCredentialsFile("../go-reviews-a488e-firebase-adminsdk-2h56f-f5840bc0a9.json")
+	app, err := firebase.NewApp(ctx, nil, opt)
+	if err != nil {
+		log.Fatalf("error initializing app: %v", err)
+		return nil, err
+	}
+	client, err := app.Firestore(ctx)
 
 	if err != nil {
 		log.Fatalf("Failed to create a firestore client: %v", err)
@@ -35,9 +43,9 @@ func Save(post *entity.Post) (*entity.Post, error) {
 
 	defer client.Close()
 	_, _, err = client.Collection(collectionName).Add(ctx, map[string]interface{}{
-		"Id": post.Id,
+		"Id":    post.Id,
 		"Title": post.Title,
-		"Text": post.Text,
+		"Text":  post.Text,
 	})
 
 	if err != nil {
@@ -51,7 +59,13 @@ func Save(post *entity.Post) (*entity.Post, error) {
 
 func (*repo) FindAll() ([]entity.Post, error) {
 	ctx := context.Background()
-	client, err := firestore.NewClient(ctx, projectId)
+	opt := option.WithCredentialsFile("../go-reviews-a488e-firebase-adminsdk-2h56f-f5840bc0a9.json")
+	app, err := firebase.NewApp(ctx, nil, opt)
+	if err != nil {
+		log.Fatalf("error initializing app: %v", err)
+		return nil, err
+	}
+	client, err := app.Firestore(ctx)
 
 	if err != nil {
 		log.Fatalf("Failed to create a firestore client: %v", err)
@@ -67,16 +81,17 @@ func (*repo) FindAll() ([]entity.Post, error) {
 		doc, err := iterator.Next()
 		if err != nil {
 			log.Fatalf("Failed to iterate the list of posts: %v", err)
-		return nil, err
+			return nil, err
 		}
 
 		post := entity.Post{
-			Id: doc.Data()["Id"](int64),
-			Title: doc.Data()["Title"](string),
-			Text: doc.Data()["Text"](string),
+			Id:    doc.Data()["Id"].(int64),
+			Title: doc.Data()["Title"].(string),
+			Text:  doc.Data()["Text"].(string),
 		}
+
 		posts = append(posts, post)
 	}
-
 	return posts, nil
+
 }

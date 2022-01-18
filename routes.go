@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/folafunmi-db/go-pragmatic/entity"
-	"github.com/folafunmi-db/go-pragmatic/repository"
+	entity "github.com/folafunmi-db/go-pragmatic/entity"
+	repository "github.com/folafunmi-db/go-pragmatic/repository"
 )
 
 var (
@@ -41,7 +41,7 @@ func addPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post.Id = rand.Int63()
-	repo.Save(post)
+	repo.Save(&post)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(post)
